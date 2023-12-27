@@ -16,6 +16,8 @@ sealed abstract class RList[+T] {
   def reverse: RList[T]
 
   def ++[S >: T](other: RList[S]): RList[S]
+
+  def removeAt(index: Int): RList[T]
 }
 
 case object RNil extends RList[Nothing] {
@@ -34,6 +36,8 @@ case object RNil extends RList[Nothing] {
   override def reverse: RList[Nothing] = throw new NoSuchElementException()
 
   override def ++[S >: Nothing](other: RList[S]): RList[S] = other
+
+  override def removeAt(index: Int): RList[Nothing] = RNil
 }
 
 case class ::[+T](override val head: T, override val tail: RList[T]) extends RList[T] {
@@ -81,13 +85,27 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
   }
 
   override def ++[S >: T](other: RList[S]): RList[S] = {
-
+    @tailrec
     def concatTailRec(result: RList[S], remaining: RList[S]): RList[S] = {
       if (remaining.isEmpty) result
       else concatTailRec(remaining.head :: result, remaining.tail)
     }
 
     concatTailRec(other, this.reverse)
+  }
+
+  override def removeAt(index: Int): RList[T] = {
+    @tailrec
+    def removeAtTailRec(currIndex: Int, currentList: RList[T], remaining: RList[T]): RList[T] = {
+      if (currIndex == index) currentList.reverse ++ remaining.tail
+      else if (currIndex > index) this
+      else if (remaining.isEmpty) currentList.reverse
+      else {
+        removeAtTailRec(currIndex + 1, remaining.head :: currentList, remaining.tail)
+      }
+    }
+
+    removeAtTailRec(0, RNil, this)
   }
 }
 
@@ -96,6 +114,6 @@ object List extends App {
   val list1 = 1 :: 2 :: 3 :: 4 :: 5 :: 6 ::  RNil
   val list2 = 7 :: 8 :: 9 ::  RNil
 
-  println(list1 ++ list2)
+  println(list1.removeAt(3))
 
 }
