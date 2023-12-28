@@ -24,6 +24,7 @@ sealed abstract class RList[+T] {
   def flatMap[S](f: T => RList[S]): RList[S]
 
   def filter(f: T => Boolean): RList[T]
+
 }
 
 case object RNil extends RList[Nothing] {
@@ -182,6 +183,8 @@ object List extends App {
   println(list1.flatMap(x => x :: (1 + x) :: RNil))
 
   println(list1.filter(x => x == 3))
+
+
   // List[1, 2, 3, 4, 5, 6]
   // List[1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7]
 }
