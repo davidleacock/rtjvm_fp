@@ -25,6 +25,7 @@ sealed abstract class RList[+T] {
 
   def filter(f: T => Boolean): RList[T]
 
+  def rle: RList[(T, Int)]
 }
 
 case object RNil extends RList[Nothing] {
@@ -51,6 +52,8 @@ case object RNil extends RList[Nothing] {
   override def flatMap[S](f: Nothing => RList[S]): RList[S] = RNil
 
   override def filter(f: Nothing => Boolean): RList[Nothing] = RNil
+
+  override def rle: RList[(Nothing, Int)] = RNil
 }
 
 case class ::[+T](override val head: T, override val tail: RList[T])
@@ -64,6 +67,7 @@ case class ::[+T](override val head: T, override val tail: RList[T])
       else if (remaining.tail.isEmpty) s"$result${remaining.head}"
       else toStringTailrec(remaining.tail, s"$result${remaining.head},")
     }
+
     "[" + toStringTailrec(this, "") + "]"
   }
 
@@ -111,10 +115,10 @@ case class ::[+T](override val head: T, override val tail: RList[T])
   override def removeAt(index: Int): RList[T] = {
     @tailrec
     def removeAtTailRec(
-      currIndex: Int,
-      currentList: RList[T],
-      remaining: RList[T]
-    ): RList[T] = {
+                         currIndex: Int,
+                         currentList: RList[T],
+                         remaining: RList[T]
+                       ): RList[T] = {
       if (currIndex == index) currentList.reverse ++ remaining.tail
       else if (currIndex > index) this
       else if (remaining.isEmpty) currentList.reverse
@@ -135,7 +139,7 @@ case class ::[+T](override val head: T, override val tail: RList[T])
     @tailrec
     def mapTailRec(acc: RList[S], remaining: RList[T]): RList[S] = {
       if (remaining.isEmpty) acc.reverse
-      else mapTailRec(f(remaining.head) :: acc , remaining.tail)
+      else mapTailRec(f(remaining.head) :: acc, remaining.tail)
     }
 
     mapTailRec(RNil, this)
@@ -156,9 +160,9 @@ case class ::[+T](override val head: T, override val tail: RList[T])
 
     @tailrec
     def filterTailRec(
-      currentList: RList[T],
-      remaining: RList[T]
-    ): RList[T] = {
+                       currentList: RList[T],
+                       remaining: RList[T]
+                     ): RList[T] = {
       if (remaining.isEmpty) currentList.reverse
       else if (f(remaining.head)) {
         filterTailRec(currentList, remaining.tail)
@@ -169,6 +173,24 @@ case class ::[+T](override val head: T, override val tail: RList[T])
 
     filterTailRec(RNil, this)
   }
+
+  override def rle: RList[(T, Int)] = {
+    // [1,1,2,2,2,3]
+    // [(1, 2), (2, 3), (3, 1)]]
+
+    @tailrec
+    def rleTailRec(result: RList[(T, Int)], remaining: RList[T], curr: (T, Int)): RList[(T, Int)] = {
+      if (remaining.isEmpty && curr._2 == 0) result
+      else if (remaining.isEmpty) curr :: result
+      else if (remaining.head != curr._1) {
+        rleTailRec(curr :: result, remaining.tail, (remaining.head, 1))
+      } else {
+        rleTailRec(result, remaining.tail, (curr._1, curr._2 + 1))
+      }
+    }
+
+    rleTailRec(RNil, this.tail, (this.head, 1)).reverse
+  }
 }
 
 object List extends App {
@@ -178,12 +200,14 @@ object List extends App {
 
 //  println(list1.removeAt(3))
 
-  println(list1.map(x => x + 1))
+//  println(list1.map(x => x + 1))
+//
+//  println(list1.flatMap(x => x :: (1 + x) :: RNil))
+//
+//  println(list1.filter(x => x == 3))
 
-  println(list1.flatMap(x => x :: (1 + x) :: RNil))
-
-  println(list1.filter(x => x == 3))
-
+  val list3 = 1 :: 1 :: 2 :: 3 :: 3 :: 3 :: 3 :: 3 :: 4 :: 4 :: 4 :: 5 :: 6 :: RNil
+  println(list3.rle)
 
   // List[1, 2, 3, 4, 5, 6]
   // List[1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7]
