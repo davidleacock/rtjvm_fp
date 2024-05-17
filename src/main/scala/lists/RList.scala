@@ -28,6 +28,8 @@ sealed abstract class RList[+T] {
   def rle: RList[(T, Int)]
 
   def duplicate(amount: Int): RList[T]
+
+  def rotate(amount: Int): RList[T]
 }
 
 case object RNil extends RList[Nothing] {
@@ -58,6 +60,8 @@ case object RNil extends RList[Nothing] {
   override def rle: RList[(Nothing, Int)] = RNil
 
   override def duplicate(amount: Int): RList[Nothing] = RNil
+
+  override def rotate(amount: Int): RList[Nothing] = RNil
 }
 
 case class ::[+T](override val head: T, override val tail: RList[T]) extends RList[T] {
@@ -189,15 +193,25 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
 
     tailRecDuplicate(amount, RNil, this.head, this.tail)
   }
+
+  override def rotate(amount: Int): RList[T] = {
+    @tailrec
+    def tailRecRotate(curr: RList[T], index: Int): RList[T] = {
+      if (curr.length == this.length) curr.reverse
+      else tailRecRotate(this(index) :: curr, (index + 1) % this.length)
+    }
+
+    tailRecRotate(RNil, amount)
+  }
 }
 
 object List extends App {
 
-  val list1 = 1 :: 2 :: 3 :: 4 :: 5 :: 6 :: RNil
+  val list1 = 1 :: 2 :: 3 :: 4 :: 5 :: 6 :: 7 :: 8 :: 9 :: 10 :: RNil
   val list2 = 7 :: 8 :: 9 :: RNil
   val list3 = 1 :: 2 :: 3 :: 4 :: RNil
 
-  println(list3.duplicate(2))
+  println(list1.rotate(3))
 
 //  println(list1.removeAt(3))
 
